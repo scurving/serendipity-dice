@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.DS_Store
+# User's local state — never committed
+fires.jsonl
+learned-weights.json
+.serendipity-state.json

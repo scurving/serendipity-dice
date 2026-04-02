@@ -1,0 +1,55 @@
+# Serendipity Dice — probabilistic perspective interrupts for Claude Code
+#
+# Tune these values to control how often and how the dice fires.
+
+enabled: true
+
+# Probability of firing on any given user message (0.0 - 1.0)
+# Set during first-run setup wizard. Presets:
+#   subtle: 0.10 (~1 per 12 messages)
+#   balanced: 0.15 (~1 per 8 messages)
+#   frequent: 0.25 (~1 per 5 messages)
+fire_rate: 0.15
+
+# Minimum messages between fires (prevents back-to-back interrupts)
+cooldown_messages: 4
+
+# Minimum prompt length to trigger (skip one-word commands)
+min_prompt_length: 20
+
+# Posture weights — relative weights, normalized at runtime
+# These determine the ANGLE of the interrupt, not WHO delivers it
+postures:
+  contrarian:
+    weight: 1
+    directive: >
+      CONTRARIAN — Challenge this direction. Where does it break?
+      What assumption is load-bearing but unexamined?
+      Be specific, not generically skeptical.
+  decision_type:
+    weight: 2
+    directive: >
+      DECISION TYPE — Is this a one-way door or two-way door?
+      What makes it reversible or irreversible?
+      If one-way, what would you want to verify before walking through?
+  builds:
+    weight: 1
+    directive: >
+      BUILDS — Where does this go 2-3 steps from now?
+      What adjacent possibility does this open up that isn't obvious yet?
+  robustness:
+    weight: 2
+    directive: >
+      ROBUSTNESS — What could go wrong when this ships?
+      What makes this more robust and shippable right now?
+      Focus on the practical, not the theoretical.
+
+# Perspective discovery — where to find perspectives to channel
+# The dice discovers from multiple sources in priority order:
+#   1. Custom perspectives in config/perspectives/*.yaml (this repo)
+#   2. User's agents at ~/.claude/agents/*.md
+#   3. User's skills at ~/.claude/skills/*/skill.md
+#   4. Plugin agents (discovered at runtime)
+#
+# Set to "auto" to discover all, or list specific IDs:
+perspective_sources: auto
