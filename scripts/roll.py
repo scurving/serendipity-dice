@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Roll the serendipity dice — manual /dice invocation.
+"""Roll the serendipity dice — manual /dice invocation (v2.0).
 
-Picks a random perspective from all discovered sources and a weighted-random
-posture from config/serendipity.yaml. Pure random — no context-awareness.
+Picks a random perspective from all discovered sources and a random posture
+from 3 posture sources. Pure random — no temperature (that's the hook's job).
 """
 
 import random
@@ -13,6 +13,12 @@ import yaml
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 CLAUDE_DIR = Path.home() / ".claude"
+
+# Skills whose thinking-mode keywords qualify them as posture-like
+_SKILL_POSTURE_KEYWORDS = frozenset({
+    "blast", "radius", "compounding", "impact", "surface",
+    "eval", "verify", "audit", "review", "simplify",
+})
 
 
 def _parse_frontmatter(path: Path) -> dict:
@@ -55,7 +61,9 @@ def _extract_body_section(text: str, heading: str) -> str:
     return "\n".join(result).strip()[:600] if result else ""
 
 
-# -- Perspective discovery from 4 sources --
+# ---------------------------------------------------------------------------
+# Perspective discovery (4 sources)
+# ---------------------------------------------------------------------------
 
 
 def _discover_archetypes() -> list[dict]:
@@ -99,7 +107,6 @@ def _discover_user_agents() -> list[dict]:
             text = ""
         name = fm.get("name", p.stem)
         desc = fm.get("description", "")
-        # Truncate long descriptions to a usable summary
         if isinstance(desc, str) and len(desc) > 200:
             desc = desc[:200].rsplit(" ", 1)[0] + "..."
         identity = _extract_body_section(text, "identity") if text else ""
@@ -154,7 +161,6 @@ def _discover_plugin_agents() -> list[dict]:
     if not plugins_cache.is_dir():
         return []
     results = []
-    # Plugins may nest: cache/<plugin>/<version>/agents/ or cache/<plugin>/agents/
     for md in sorted(plugins_cache.rglob("agents/*.md")):
         fm = _parse_frontmatter(md)
         if not fm:
@@ -181,20 +187,112 @@ def _discover_plugin_agents() -> list[dict]:
     return results
 
 
-def discover_all_perspectives() -> list[dict]:
+def discover_all_perspectives(exclude: set[str] | None = None) -> list[dict]:
     """Gather perspectives from all 4 sources. Deduplicate by id (first wins)."""
-    seen = set()
-    all_perspectives = []
+    exclude = exclude or set()
+    seen: set[str] = set()
+    all_perspectives: list[dict] = []
     for fn in (_discover_archetypes, _discover_user_agents, _discover_user_skills, _discover_plugin_agents):
         for p in fn():
-            if p["id"] not in seen:
-                seen.add(p["id"])
-                all_perspectives.append(p)
+            pid = p["id"]
+            if pid in seen or pid in exclude:
+                continue
+            seen.add(pid)
+            all_perspectives.append(p)
     return all_perspectives
 
 
+# ---------------------------------------------------------------------------
+# Posture discovery (3 sources)
+# ---------------------------------------------------------------------------
+
+
+def _postures_from_config(config: dict) -> list[dict]:
+    """Source 1: postures defined inline in serendipity.yaml."""
+    postures = config.get("postures", {})
+    results = []
+    for name, body in postures.items():
+        results.append({
+            "label": name.upper().replace("_", " "),
+            "directive": body.get("directive", "Provide a different perspective.").strip(),
+            "weight": body.get("weight", 1),
+            "source": "config",
+        })
+    return results
+
+
+def _postures_from_files() -> list[dict]:
+    """Source 2: config/postures/*.yaml — standalone posture definition files."""
+    postures_dir = CONFIG_DIR / "postures"
+    if not postures_dir.is_dir():
+        return []
+    results = []
+    for p in sorted(postures_dir.glob("*.yaml")):
+        try:
+            data = yaml.safe_load(p.read_text())
+            if not data:
+                continue
+            results.append({
+                "label": data.get("label", p.stem.upper().replace("-", " ").replace("_", " ")),
+                "directive": data.get("directive", "").strip(),
+                "weight": data.get("weight", 1),
+                "source": "posture-file",
+            })
+        except Exception:
+            continue
+    return results
+
+
+def _postures_from_skills() -> list[dict]:
+    """Source 3: thinking-mode skills at ~/.claude/skills/ matching posture keywords."""
+    skills_dir = CLAUDE_DIR / "skills"
+    if not skills_dir.is_dir():
+        return []
+    results = []
+    for skill_md in sorted(skills_dir.glob("*/skill.md")):
+        skill_id = skill_md.parent.name
+        if skill_id == "serendipity-dice":
+            continue
+        # Check if the skill name/ID or description matches any posture keyword
+        name_lower = skill_id.lower().replace("-", " ").replace("_", " ")
+        matched = any(kw in name_lower for kw in _SKILL_POSTURE_KEYWORDS)
+        fm = _parse_frontmatter(skill_md)
+        if not matched:
+            desc_lower = str(fm.get("description", "")).lower()
+            matched = any(kw in desc_lower for kw in _SKILL_POSTURE_KEYWORDS)
+        if not matched:
+            continue
+        name = fm.get("name", skill_id)
+        desc = fm.get("description", "")
+        if isinstance(desc, str) and len(desc) > 200:
+            desc = desc[:200].rsplit(" ", 1)[0] + "..."
+        results.append({
+            "label": name.upper() if isinstance(name, str) else skill_id.upper(),
+            "directive": desc if isinstance(desc, str) else str(desc),
+            "weight": 1,
+            "source": "skill",
+        })
+    return results
+
+
+def discover_all_postures(config: dict) -> list[dict]:
+    """Gather postures from all 3 sources."""
+    all_postures: list[dict] = []
+    for fn in (
+        lambda: _postures_from_config(config),
+        _postures_from_files,
+        _postures_from_skills,
+    ):
+        all_postures.extend(fn())
+    return all_postures
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+
 def main():
-    # Load postures from config
     config_path = CONFIG_DIR / "serendipity.yaml"
     if not config_path.exists():
         print(f"No serendipity config found at {config_path}", file=sys.stderr)
@@ -202,19 +300,21 @@ def main():
 
     config = yaml.safe_load(config_path.read_text())
 
-    postures = config.get("postures", {})
+    # Perspective exclusion list
+    exclude_ids = set(config.get("perspective_exclude", []) or [])
+
+    # Discover postures from 3 sources
+    postures = discover_all_postures(config)
     if not postures:
-        print("No postures defined in config", file=sys.stderr)
+        print("No postures found in any source", file=sys.stderr)
         sys.exit(1)
 
     # Roll posture (weighted)
-    names = list(postures.keys())
-    weights = [postures[n].get("weight", 1) for n in names]
-    chosen_name = random.choices(names, weights=weights, k=1)[0]
-    chosen_posture = postures[chosen_name]
+    weights = [p["weight"] for p in postures]
+    chosen_posture = random.choices(postures, weights=weights, k=1)[0]
 
     # Discover and roll perspective (uniform)
-    perspectives = discover_all_perspectives()
+    perspectives = discover_all_perspectives(exclude=exclude_ids)
     if not perspectives:
         print("No perspectives found in any source", file=sys.stderr)
         sys.exit(1)
@@ -222,11 +322,8 @@ def main():
     perspective = random.choice(perspectives)
 
     # Format output — only print lines with content
-    posture_label = chosen_name.upper().replace("_", " ")
-    directive = chosen_posture.get("directive", "Provide a different perspective.").strip()
-
-    print(f"AGENT: {perspective['name']} ({perspective['role']})" if perspective.get("role")
-          else f"AGENT: {perspective['name']}")
+    print(f"PERSPECTIVE: {perspective['name']} ({perspective['role']})" if perspective.get("role")
+          else f"PERSPECTIVE: {perspective['name']}")
     print(f"SOURCE: {perspective['source']}")
     if perspective.get("capabilities"):
         print(f"CAPABILITIES: {', '.join(perspective['capabilities'][:6])}")
@@ -234,8 +331,9 @@ def main():
         print(f"IDENTITY: {perspective['identity']}")
     if perspective.get("voice"):
         print(f"VOICE: {perspective['voice']}")
-    print(f"POSTURE: {posture_label}")
-    print(f"DIRECTIVE: {directive}")
+    print(f"POSTURE: {chosen_posture['label']}")
+    print(f"POSTURE SOURCE: {chosen_posture['source']}")
+    print(f"DIRECTIVE: {chosen_posture['directive']}")
 
 
 if __name__ == "__main__":

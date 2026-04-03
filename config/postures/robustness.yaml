@@ -1,0 +1,7 @@
+id: robustness
+label: ROBUSTNESS
+weight: 2
+directive: >
+  What could go wrong when this ships?
+  What makes this more robust and shippable right now?
+  Focus on the practical, not the theoretical.

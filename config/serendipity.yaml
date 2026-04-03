@@ -53,3 +53,18 @@ postures:
 #
 # Set to "auto" to discover all, or list specific IDs:
 perspective_sources: auto
+
+# Exclude specific perspectives by ID (e.g., domain-specific ones that don't cross-pollinate well)
+perspective_exclude: []
+
+# Posture discovery — postures come from multiple sources:
+#   1. Postures defined in this file (above)
+#   2. YAML files in config/postures/*.yaml
+#   3. Thinking-mode skills auto-discovered from ~/.claude/skills/
+#      (skills matching: blast, radius, compounding, impact, surface, eval, verify, audit, review, simplify)
+#
+# The dice also computes a "temperature" per-roll from session dynamics:
+#   Low temp (ADVISOR) → postures relevant to your current work
+#   Med temp (CATALYST) → relevant but surprising angles
+#   High temp (EXPLORER) → wild cross-domain sparks
+# Temperature is automatic — no configuration needed.

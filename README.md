@@ -1,6 +1,6 @@
 # Serendipity Dice
 
-Fresh perspectives, on demand. A Claude Code skill that probabilistically interrupts your sessions with insights from different thinking angles — channeling your own agents and skills through structured postures.
+Fresh perspectives, on demand. A Claude Code skill that probabilistically interrupts your sessions with insights from different thinking angles — channeling your own agents and skills through dynamically-discovered postures.
 
 ## Quick Start
 
@@ -13,7 +13,7 @@ git clone https://github.com/scurving/serendipity-dice ~/.claude/skills/serendip
 
 ## How It Works
 
-The dice rolls two axes every time it fires:
+The dice rolls two dynamic axes every time it fires:
 
 **WHO** (Perspective) — the lens applied to your work:
 - 5 starter perspectives ship out of the box: The Skeptic, The Builder, The Risk Analyst, The Systems Thinker, The End User
@@ -21,26 +21,42 @@ The dice rolls two axes every time it fires:
 - The more you've built, the more diverse the perspectives
 
 **HOW** (Posture) — the angle of the interrupt:
-- **CONTRARIAN** — challenges the direction, finds unexamined assumptions
-- **DECISION TYPE** — one-way door or two-way door?
-- **BUILDS** — where does this go 2-3 steps from now?
-- **ROBUSTNESS** — what breaks when this ships?
+- 4 starter postures: Contrarian, Decision Type, Builds, Robustness
+- Automatically discovers your thinking-mode skills (like blast-radius, eval, compounding-impact) as additional postures
+- Add your own postures as YAML files in `config/postures/`
+- Both axes grow with your environment
+
+**TEMPERATURE** — the dice reads the room:
+- Early in a session → **Explorer** mode (wild cross-domain sparks)
+- Deep in focused work → **Advisor** mode (relevant, pointed perspectives)
+- Stuck on the same topic → **Catalyst** mode (nudge sideways)
+- Temperature is computed per-roll from your session dynamics — no configuration needed
 
 ## Two Modes
 
 ### Manual: `/dice`
 
-Run `/dice` anytime you want a fresh angle. Pure random roll — no context needed.
+Run `/dice` anytime you want a fresh angle. Pure random roll — always Explorer mode.
 
 ### Automatic: Hook
 
-Register the `UserPromptSubmit` hook and the dice fires probabilistically during your sessions. It reads your conversation context and picks perspectives that are *interestingly relevant* — not the most obvious match, but one that cross-pollinates.
+Register the `UserPromptSubmit` hook and the dice fires probabilistically during your sessions. It reads your conversation context, computes temperature from session dynamics, and picks perspective × posture combinations that match the moment.
+
+## What It Feels Like
+
+The dice doesn't announce itself with system labels. It feels like a colleague tapping you on the shoulder:
+
+> **The Skeptic:** You're treating these config layers like they're independent, but they share a silent dependency on initialization order. Has anyone tested what happens when layer 3 loads before layer 1?
+
+Not:
+
+> **[The Skeptic — CONTRARIAN]:** As a devil's advocate, I would suggest examining the initialization order of your configuration layers.
 
 ## Setup
 
 The first time you run `/dice`, a setup wizard walks you through:
 
-1. **Environment scan** — discovers your agents, skills, and starter perspectives
+1. **Environment scan** — discovers your agents, skills, perspectives, and postures
 2. **Example roll** — shows what a dice interrupt looks like
 3. **Work context** — solo dev, team lead, researcher, or creative (tunes posture weights)
 4. **Fire rate** — how often you want interrupts:
@@ -55,7 +71,7 @@ After setup, your config lives at `~/.claude/dice/config.yaml`. Edit directly to
 
 - Adjust `fire_rate` and `cooldown_messages`
 - Change posture `weight` values (higher = more likely to roll)
-- Edit posture `directive` text
+- Set `perspective_exclude` to skip specific perspectives
 - Set `enabled: false` to pause without uninstalling
 
 ## Adding Your Own Perspectives
@@ -80,7 +96,22 @@ voice: >
   "This coupling will cost you later."
 ```
 
-Or just add agents to `~/.claude/agents/` — the dice discovers them automatically.
+Or add agents to `~/.claude/agents/` — the dice discovers them automatically.
+
+## Adding Your Own Postures
+
+Drop a YAML file in `config/postures/`:
+
+```yaml
+id: threat-model
+label: THREAT MODEL
+weight: 1
+directive: >
+  Who would attack this? What's the attack surface?
+  What's the cheapest exploit? Think like an adversary.
+```
+
+Your thinking-mode skills are also auto-discovered as postures.
 
 ## Architecture
 
@@ -88,10 +119,11 @@ Or just add agents to `~/.claude/agents/` — the dice discovers them automatica
 serendipity-dice/
   skill.md              # Skill definition (normal + setup wizard modes)
   config/
-    serendipity.yaml    # Postures, fire rate, cooldown
-    perspectives/       # Starter archetypes (YAML)
+    serendipity.yaml    # Fire rate, cooldown, base posture weights
+    perspectives/       # Starter perspectives (YAML)
+    postures/           # Starter postures (YAML, extensible)
   scripts/
-    hook.py             # UserPromptSubmit hook (automatic fires)
+    hook.py             # UserPromptSubmit hook (automatic fires + temperature)
     roll.py             # Manual /dice rolls
 ```
 

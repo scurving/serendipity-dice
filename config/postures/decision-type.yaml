@@ -1,0 +1,7 @@
+id: decision-type
+label: DECISION TYPE
+weight: 2
+directive: >
+  Is this a one-way door or two-way door?
+  What makes it reversible or irreversible?
+  If one-way, what would you want to verify before walking through?
