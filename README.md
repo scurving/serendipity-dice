@@ -1,6 +1,6 @@
 # Serendipity Dice
 
-Fresh perspectives, on demand. A Claude Code skill that probabilistically interrupts your sessions with insights from different thinking angles — channeling your own agents and skills through dynamically-discovered postures.
+Fresh perspectives, on demand. A Claude Code skill that probabilistically perspectives your sessions with insights from different thinking angles — channeling your own agents and skills through dynamically-discovered postures.
 
 ## Quick Start
 
@@ -20,7 +20,7 @@ The dice rolls two dynamic axes every time it fires:
 - Automatically discovers your installed agents (`~/.claude/agents/`) and skills (`~/.claude/skills/`)
 - The more you've built, the more diverse the perspectives
 
-**HOW** (Posture) — the angle of the interrupt:
+**HOW** (Posture) — the angle of the perspective:
 - 4 starter postures: Contrarian, Decision Type, Builds, Robustness
 - Automatically discovers your thinking-mode skills (like blast-radius, eval, compounding-impact) as additional postures
 - Add your own postures as YAML files in `config/postures/`
@@ -57,9 +57,9 @@ Not:
 The first time you run `/dice`, a setup wizard walks you through:
 
 1. **Environment scan** — discovers your agents, skills, perspectives, and postures
-2. **Example roll** — shows what a dice interrupt looks like
+2. **Example roll** — shows what a dice perspective looks like
 3. **Work context** — solo dev, team lead, researcher, or creative (tunes posture weights)
-4. **Fire rate** — how often you want interrupts:
+4. **Fire rate** — how often you want perspectives:
    - Subtle (10%) — ~1 per 12 messages
    - Balanced (15%) — ~1 per 8 messages
    - Frequent (25%) — ~1 per 5 messages
