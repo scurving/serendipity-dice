@@ -1,6 +1,8 @@
 # Serendipity Dice
 
-Fresh perspectives, on demand. A Claude Code skill that probabilistically perspectives your sessions with insights from different thinking angles — channeling your own agents and skills through dynamically-discovered postures.
+A Claude Code skill that gives you fresh thinking angles — on demand or probabilistically during your sessions. It channels perspectives from your own agents, skills, and starter archetypes through dynamically-discovered postures.
+
+Like a colleague who glances at your screen, sees what you're working on, and says the one thing you weren't thinking about.
 
 ## Quick Start
 
@@ -8,99 +10,68 @@ Fresh perspectives, on demand. A Claude Code skill that probabilistically perspe
 # Clone to your Claude Code skills directory
 git clone https://github.com/scurving/serendipity-dice ~/.claude/skills/serendipity-dice
 
-# First time? Just run /dice — the setup wizard handles the rest
+# Run /dice — the setup wizard handles the rest
 ```
 
 ## How It Works
 
-The dice rolls two dynamic axes every time it fires:
+Every roll combines two axes:
 
-**WHO** (Perspective) — the lens applied to your work:
-- 5 starter perspectives ship out of the box: The Skeptic, The Builder, The Risk Analyst, The Systems Thinker, The End User
-- Automatically discovers your installed agents (`~/.claude/agents/`) and skills (`~/.claude/skills/`)
-- The more you've built, the more diverse the perspectives
+**Perspective** — who's weighing in:
+- 5 starter archetypes: The Skeptic, The Builder, The Risk Analyst, The Systems Thinker, The End User
+- Auto-discovers your installed agents (`~/.claude/agents/`) and skills (`~/.claude/skills/`)
+- The more you've built in your Claude Code environment, the richer the pool
 
-**HOW** (Posture) — the angle of the perspective:
+**Posture** — the angle they're bringing:
 - 4 starter postures: Contrarian, Decision Type, Builds, Robustness
-- Automatically discovers your thinking-mode skills (like blast-radius, eval, compounding-impact) as additional postures
-- Add your own postures as YAML files in `config/postures/`
-- Both axes grow with your environment
+- Auto-discovers your thinking-mode skills (blast-radius, eval, compounding-impact, etc.)
+- Add your own as YAML files in `config/postures/`
 
-**TEMPERATURE** — the dice reads the room:
-- Early in a session → **Explorer** mode (wild cross-domain sparks)
-- Deep in focused work → **Advisor** mode (relevant, pointed perspectives)
-- Stuck on the same topic → **Catalyst** mode (nudge sideways)
-- Temperature is computed per-roll from your session dynamics — no configuration needed
-
-## Two Modes
-
-### Manual: `/dice`
-
-Run `/dice` anytime you want a fresh angle. Pure random roll — always Explorer mode.
-
-### Automatic: Hook
-
-Register the `UserPromptSubmit` hook and the dice fires probabilistically during your sessions. It reads your conversation context, computes temperature from session dynamics, and picks perspective × posture combinations that match the moment.
+**Temperature** — how the dice reads the room:
+- Early in a session → **Explorer** (cross-domain sparks)
+- Deep in focused work → **Advisor** (relevant, pointed)
+- Stuck on the same topic → **Catalyst** (nudge sideways)
+- Computed per-roll from your session dynamics. No configuration needed.
 
 ## What It Feels Like
 
-The dice doesn't announce itself with system labels. It feels like a colleague tapping you on the shoulder:
-
 > **The Skeptic:** You're treating these config layers like they're independent, but they share a silent dependency on initialization order. Has anyone tested what happens when layer 3 loads before layer 1?
 
-Not:
+No system labels. No `[Name — POSTURE]:` formatting. Just the insight, in their voice, about your work.
 
-> **[The Skeptic — CONTRARIAN]:** As a devil's advocate, I would suggest examining the initialization order of your configuration layers.
+## Two Modes
+
+**`/dice`** — manual. Roll anytime you want a fresh angle. Always Explorer mode.
+
+**Automatic hook** — register the `UserPromptSubmit` hook and the dice fires probabilistically. It reads your conversation, picks a perspective × posture combination that matches the moment, and delivers it as a brief aside before your normal response continues.
 
 ## Setup
 
-The first time you run `/dice`, a setup wizard walks you through:
+First `/dice` triggers a setup wizard:
 
-1. **Environment scan** — discovers your agents, skills, perspectives, and postures
-2. **Example roll** — shows what a dice perspective looks like
-3. **Work context** — solo dev, team lead, researcher, or creative (tunes posture weights)
-4. **Fire rate** — how often you want perspectives:
-   - Subtle (10%) — ~1 per 12 messages
-   - Balanced (15%) — ~1 per 8 messages
-   - Frequent (25%) — ~1 per 5 messages
-5. **Hook registration** — optionally adds the automatic hook to your settings
+1. **Scan** — discovers your agents, skills, and available postures
+2. **Demo** — shows an example roll so you see what you're getting
+3. **Work context** — solo dev, team lead, researcher, or creative (adjusts posture weights)
+4. **Frequency** — subtle (10%), balanced (15%), or frequent (25%)
+5. **Hook** — optionally registers the automatic hook
 
-## Configuration
+## Extending
 
-After setup, your config lives at `~/.claude/dice/config.yaml`. Edit directly to:
-
-- Adjust `fire_rate` and `cooldown_messages`
-- Change posture `weight` values (higher = more likely to roll)
-- Set `perspective_exclude` to skip specific perspectives
-- Set `enabled: false` to pause without uninstalling
-
-## Adding Your Own Perspectives
-
-Drop a YAML file in `config/perspectives/`:
+**Add a perspective** — drop a YAML in `config/perspectives/`:
 
 ```yaml
-id: my-perspective
+id: architect
 name: The Architect
 role: System designer
-capabilities:
-  - api-design
-  - data-modeling
-  - separation-of-concerns
+capabilities: [api-design, data-modeling, separation-of-concerns]
 identity: >
-  Thinks in interfaces and boundaries. Every system is a set of
-  contracts between components. Good architecture makes the right
-  thing easy and the wrong thing hard.
+  Thinks in interfaces and boundaries. Good architecture makes
+  the right thing easy and the wrong thing hard.
 voice: >
-  Style: Precise, boundary-focused.
-  Phrases: "What's the contract here?", "Where's the seam?",
-  "This coupling will cost you later."
+  Phrases: "What's the contract here?", "Where's the seam?"
 ```
 
-Or add agents to `~/.claude/agents/` — the dice discovers them automatically.
-
-## Adding Your Own Postures
-
-Drop a YAML file in `config/postures/`:
+**Add a posture** — drop a YAML in `config/postures/`:
 
 ```yaml
 id: threat-model
@@ -108,30 +79,37 @@ label: THREAT MODEL
 weight: 1
 directive: >
   Who would attack this? What's the attack surface?
-  What's the cheapest exploit? Think like an adversary.
+  Think like an adversary.
 ```
 
-Your thinking-mode skills are also auto-discovered as postures.
+Or just add agents to `~/.claude/agents/` and skills to `~/.claude/skills/` — the dice discovers them automatically. Both axes grow with your environment.
+
+## Configuration
+
+After setup, edit `~/.claude/dice/config.yaml`:
+
+- `fire_rate` — probability of firing per message (0.0–1.0)
+- `cooldown_messages` — minimum messages between fires
+- `perspective_exclude` — skip specific perspective IDs
+- `enabled` — pause without uninstalling
 
 ## Architecture
 
 ```
 serendipity-dice/
-  skill.md              # Skill definition (normal + setup wizard modes)
+  skill.md                  # Skill definition + setup wizard
   config/
-    serendipity.yaml    # Fire rate, cooldown, base posture weights
-    perspectives/       # Starter perspectives (YAML)
-    postures/           # Starter postures (YAML, extensible)
+    serendipity.yaml        # Fire rate, cooldown, base posture weights
+    perspectives/           # Starter archetypes (YAML)
+    postures/               # Starter postures (YAML, extensible)
   scripts/
-    hook.py             # UserPromptSubmit hook (automatic fires + temperature)
-    roll.py             # Manual /dice rolls
+    hook.py                 # UserPromptSubmit hook (automatic + temperature)
+    roll.py                 # Manual /dice
 ```
-
-**No dependencies** beyond PyYAML and a Claude Code installation.
 
 ## Requirements
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI, desktop app, or IDE extension
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 - Python 3.10+
 - PyYAML (`pip install pyyaml`)
 
